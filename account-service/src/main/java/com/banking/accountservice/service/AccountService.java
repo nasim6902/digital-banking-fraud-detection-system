@@ -13,6 +13,7 @@ import com.banking.accountservice.repository.AccountRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.security.SecureRandom;
+import java.util.HashMap;
 import java.util.Map;
 
 @Service
@@ -29,6 +31,9 @@ public class AccountService {
 
     private final AccountRepository accountRepository;
     private static final SecureRandom secureRandom = new SecureRandom();
+
+    private static final String ACCOUNT_CREATED_TOPIC = "account.created";
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
 
     @Transactional
@@ -67,6 +72,21 @@ public class AccountService {
 
         Account saved = accountRepository.saveAndFlush(account);
         log.info("Account created: {}", saved.getAccountNumber());
+
+        Map<String, Object> acEvent = new HashMap<>();
+        acEvent.put("accountId", saved.getId());
+        acEvent.put("userId", saved.getOwnerUserId());
+        acEvent.put("accountNumber", saved.getAccountNumber());
+        acEvent.put("accountHolderName", saved.getAccountHolderName());
+        acEvent.put("email", saved.getEmail());
+        acEvent.put("phone", saved.getPhone());
+        acEvent.put("accountType", saved.getAccountType());
+        acEvent.put("status", saved.getStatus());
+        acEvent.put("balance", saved.getBalance());
+        acEvent.put("dailyTransactionLimit", saved.getDailyTransactionLimit());
+        acEvent.put("createdAt", saved.getCreatedAt());
+
+        kafkaTemplate.send(ACCOUNT_CREATED_TOPIC, saved.getEmail(), acEvent);
 
         return mapToResponse(saved);
     }
@@ -188,7 +208,7 @@ public class AccountService {
         }
     }
 
-    
+
     private String generateAccountNumber() {
         String accountNumber;
 

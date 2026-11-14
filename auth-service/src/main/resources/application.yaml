@@ -15,8 +15,27 @@ spring:
       hibernate:
         format_sql: true
 
+  kafka:
+    bootstrap-servers: localhost:29092
+    producer:
+      group-id: auth-service-group
+      auto-offset-reset: earliest
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring:
+          json:
+            trusted:
+              packages: "*"
+            use:
+              type:
+                headers: false
+            value:
+              default:
+                type: java.util.HashMap
+
 jwt:
-  secret: ${JWT_SECRET:6ejww/6f3JIAa8GVIPNTDWsjR0Wx/iCrOp6fSMaFBB0=}
+  secret: ${JWT_SECRET}
   expiration: 1800000
 
 server:

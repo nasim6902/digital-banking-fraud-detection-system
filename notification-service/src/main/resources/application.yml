@@ -24,8 +24,8 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: ${MAIL_USERNAME:kingprime6902@gmail.com}
-    password: ${MAIL_PASSWORD:lrvg lcno ukku ooyp}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
     properties:
       mail:
         smtp:
@@ -38,7 +38,7 @@ spring:
           writetimeout: 5000
 
 internal-api:
-  secret: ${DBS_INTERNAL_API_SECRET:WL0ZxUjhnyh0ZLjUuQc+yQcuuYhGCK6ahgAleITHdn0=}
+  secret: ${DBS_INTERNAL_API_SECRET}
 
 server:
   port: 8085
@@ -57,21 +57,4 @@ management:
     web:
       exposure:
         include: health,info
-
-  # Gmail SMTP Configuration
-  mail:
-    host: smtp.gmail.com
-    port: 587
-    username: ${MAIL_USERNAME:kingprime6902@gmail.com}
-    password: ${MAIL_PASSWORD:lrvg lcno ukku ooyp}
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
-            required: true
-          connectiontimeout: 5000
-          timeout: 5000
-          writetimeout: 5000
 

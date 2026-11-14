@@ -12,11 +12,15 @@ import com.banking.authservice.exception.InvalidCredentialsException;
 import com.banking.authservice.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 @Slf4j
@@ -27,6 +31,9 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+
+    private static final String REGISTRATI0N_COMPLETED_TOPIC = "registration.completed";
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
     public RegistrationResponse register(RegisterRequest request) {
 
@@ -50,11 +57,19 @@ public class AuthService {
         log.info("User registration completed successfully. User ID: {}",
                 savedUser.getId());
 
+        Map<String, Object> rcEvent = new HashMap<>();
+        rcEvent.put("userId", savedUser.getId());
+        rcEvent.put("email", savedUser.getEmail());
+        rcEvent.put("createdAt", savedUser.getCreatedAt());
+
+        kafkaTemplate.send(REGISTRATI0N_COMPLETED_TOPIC, savedUser.getId(), rcEvent);
+
         return new RegistrationResponse(savedUser.getId(),
                 savedUser.getEmail(),
                 savedUser.getRole().name(),
-        savedUser.getCreatedAt(),
-        "Registration successful.");
+                savedUser.getCreatedAt(),
+                "Registration successful.");
+
     }
 
 

@@ -13,17 +13,10 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class EmailService {
 
-    private final AccountServiceClient accountServiceClient;
     private final JavaMailSender javaMailSender;
 
-    @Value("${internal-api.secret}")
-    private String internalApiSecret;
-
-    public void sendEmail(
-            String accountNumber, String subject, String message){
-
-        String email = accountServiceClient.getEmail(
-                accountNumber,internalApiSecret);
+    public void sendMail(
+            String email, String subject, String message){
 
         SimpleMailMessage mail = new SimpleMailMessage();
         mail.setTo(email);
