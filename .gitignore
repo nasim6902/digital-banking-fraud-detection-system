@@ -1,0 +1,23 @@
+# Maven
+**/target/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+out/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+application-local.yml
+application-local.yaml
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+.idea

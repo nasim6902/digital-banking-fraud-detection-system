@@ -3,19 +3,24 @@ package com.banking.notificationservice.service;
 import com.banking.notificationservice.client.AccountServiceClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Service;
 
+import javax.swing.text.SimpleAttributeSet;
 import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class NotificationService {
-
+public class NotificationEventConsumer {
 
     private final EmailService emailService;
+    private final AccountServiceClient accountServiceClient;
+
+    @Value("${internal-api.secret}")
+    private String internalApiSecret;
 
     /**
      * Transaction completed — debit sender, credit receiver.
@@ -30,11 +35,17 @@ public class NotificationService {
                     .get("receiverAccountNumber");
             String amount = payload.get("amount").toString();
 
-            emailService.sendEmail(senderAccount, "DEBIT ALERT",
+            String sEmail = accountServiceClient.getEmail(
+                    senderAccount, internalApiSecret);
+
+            emailService.sendMail(sEmail, "DEBIT ALERT",
                     String.format("₹%s debited from account %s",
                             amount, senderAccount));
 
-            emailService.sendEmail(receiverAccount, "CREDIT ALERT",
+            String rEmail = accountServiceClient.getEmail(
+                    receiverAccount, internalApiSecret);
+
+            emailService.sendMail(rEmail, "CREDIT ALERT",
                     String.format("₹%s credited to account %s",
                             amount, receiverAccount));
 
@@ -52,7 +63,9 @@ public class NotificationService {
             String accountNumber = (String) payload.get("accountNumber");
             String reason = (String) payload.get("reason");
 
-            emailService.sendEmail(accountNumber,
+            String email = accountServiceClient.getEmail(
+                    accountNumber, internalApiSecret);
+            emailService.sendMail(email,
                     "🚨 ACCOUNT BLOCKED",
                     String.format(
                             "Your account %s has been blocked. " +
@@ -76,7 +89,9 @@ public class NotificationService {
             String amount = payload.get("amount").toString();
             String reason = (String) payload.get("reason");
 
-            emailService.sendEmail(accountNumber,
+            String email = accountServiceClient.getEmail(
+                    accountNumber, internalApiSecret);
+            emailService.sendMail(email,
                     "🔐 TRANSACTION VERIFICATION REQUIRED",
                     String.format(
                             "Suspicious activity detected on your account. " +
@@ -103,7 +118,9 @@ public class NotificationService {
             String amount = payload.get("amount").toString();
             String reason = (String) payload.get("reason");
 
-            emailService.sendEmail(senderAccount, "💰 REFUND PROCESSED",
+            String email = accountServiceClient.getEmail(
+                    senderAccount, internalApiSecret);
+            emailService.sendMail(email, "💰 REFUND PROCESSED",
                     String.format(
                             "Your transaction of ₹%s was cancelled. " +
                                     "Reason: %s. " +
@@ -112,7 +129,7 @@ public class NotificationService {
 
         } catch (Exception e) {
             log.error("Error sending refund notification: {}",
-                    e.getMessage(),e);
+                    e.getMessage(), e);
         }
     }
 
@@ -126,7 +143,9 @@ public class NotificationService {
             String accountNumber = (String) payload.get("accountNumber");
             String amount = payload.get("amount").toString();
 
-            emailService.sendEmail(accountNumber, "PAYMENT SUCCESSFUL",
+            String email = accountServiceClient.getEmail(
+                    accountNumber, internalApiSecret);
+            emailService.sendMail(email, "PAYMENT SUCCESSFUL",
                     String.format(
                             "Payment of ₹%s completed. " +
                                     "Razorpay ID: %s",
@@ -148,9 +167,11 @@ public class NotificationService {
             String accountNumber = (String) payload.get("accountNumber");
             String amount = payload.get("amount").toString();
 
-            emailService.sendEmail(accountNumber, "❌ PAYMENT FAILED",
+            String email = accountServiceClient.getEmail(
+                    accountNumber, internalApiSecret);
+            emailService.sendMail(email, "❌ PAYMENT FAILED",
                     String.format(
-                            "Your payment of ₹%s could not be processed. " +
+                            "Your payment of %s could not be processed. " +
                                     "Please try again or contact support.",
                             amount));
 
@@ -160,4 +181,46 @@ public class NotificationService {
         }
     }
 
+    @KafkaListener(topics = "registration.completed")
+    public void consumeRegistrationCompleted(
+            @Payload Map<String, Object> payload) {
+
+        try {
+            String email = (String) payload.get("email");
+            String subject = "Welcome mail";
+            String message = "Congratulation! Your registration has been completed. " +
+                    "Please login using your email and password and create your account." +
+                    """
+                            Instruction for account creation:
+                            1. Account Holder Name
+                            2. Email Id (same as used for registration.)
+                            3. Phone number (same as used for registration.)
+                            4. Account Type (SAVINGS, CURRENT AND FIXED-DEPOSIT)
+                            5. Initial Deposit (Minimum should be 1000)
+                            """ +
+                    "You can connect with support at support@dbs.com for any assistance.";
+
+            emailService.sendMail(email, subject, message);
+
+        } catch (Exception e) {
+            log.error("Error sending welcome email to the user");
+        }
+    }
+
+    @KafkaListener(topics = "account.created")
+    public void consumeAccountCreated(
+            @Payload Map<String, Object> payload) {
+
+        try {
+            String email = (String) payload.get("email");
+            String subject = "Account Confirmation";
+            String message = "Congratulation! Your account has been created successfully." +
+                    "You can connect with support at support@dbs.com for any assistance.";
+
+            emailService.sendMail(email, subject, message);
+
+        } catch (Exception e) {
+            log.error("Error sending account creation email to the user");
+        }
+    }
 }

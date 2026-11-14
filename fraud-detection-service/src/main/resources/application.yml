@@ -46,7 +46,7 @@ eureka:
     ip-address: 127.0.0.1
 
 internal-api:
-  secret: ${DBS_INTERNAL_API_SECRET:WL0ZxUjhnyh0ZLjUuQc+yQcuuYhGCK6ahgAleITHdn0=}
+  secret: ${DBS_INTERNAL_API_SECRET}
 
 management:
   endpoints:
