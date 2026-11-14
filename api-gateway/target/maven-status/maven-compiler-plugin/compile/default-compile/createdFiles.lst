@@ -1,0 +1,5 @@
+com\banking\apigateway\ApiGatewayApplication.class
+com\banking\apigateway\config\JwtConfig.class
+com\banking\apigateway\config\CorsConfig.class
+com\banking\apigateway\config\RateLimiterConfig.class
+com\banking\apigateway\config\SecurityConfig.class
