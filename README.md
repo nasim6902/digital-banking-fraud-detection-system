@@ -27,7 +27,6 @@ The application is divided into independent services, with an API Gateway handli
 - **Service Discovery:** Netflix Eureka
 - **Inter-service Communication:** OpenFeign
 - **API Gateway:** Spring Cloud Gateway (WebFlux)
-- **Payment Integration:** Razorpay
 - **Email:** JavaMailSender / SMTP
 - **Build Tool:** Maven
 - **Containerization:** Docker, Docker Compose
