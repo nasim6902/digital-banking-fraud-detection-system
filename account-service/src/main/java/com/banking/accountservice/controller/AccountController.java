@@ -3,6 +3,7 @@ package com.banking.accountservice.controller;
 
 import com.banking.accountservice.dto.AccountResponse;
 import com.banking.accountservice.dto.CreateAccountRequest;
+import com.banking.accountservice.model.AccountStatus;
 import com.banking.accountservice.service.AccountService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -44,7 +45,7 @@ public class AccountController {
     @GetMapping("/{accountNumber}")
     public ResponseEntity<AccountResponse> getAccount(
             @PathVariable String accountNumber,
-            @AuthenticationPrincipal Jwt jwt) {
+            @AuthenticationPrincipal Jwt jwt) { 
 
         return ResponseEntity.ok(
                 accountService.getAccount(accountNumber, jwt.getSubject()));
@@ -81,7 +82,6 @@ public class AccountController {
         );
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{accountNumber}/block")
     public ResponseEntity<String> blockAccount(
             @PathVariable String accountNumber) {
@@ -108,15 +108,27 @@ public class AccountController {
         return ResponseEntity.ok("Balance deducted successfully");
     }
 
-    @PutMapping("/{accountNumber}/credit")
-    public ResponseEntity<String> creditBalance(
+    @PutMapping("/internal/{accountNumber}/refund")
+    public ResponseEntity<String> refundBalance(
             @PathVariable String accountNumber,
             @RequestParam BigDecimal amount,
             @RequestHeader("X-Internal-Secret") String suppliedSecret) {
 
         validateInternalSecret(suppliedSecret);
 
-        accountService.creditBalance(accountNumber, amount);
+        accountService.refundBalance(accountNumber, amount);
+
+        return ResponseEntity.ok("Balance credited successfully");
+    }
+
+    @PutMapping("/{accountNumber}/credit")
+    public ResponseEntity<String> creditBalance(
+            @PathVariable String accountNumber,
+            @RequestParam BigDecimal amount,
+            @AuthenticationPrincipal Jwt jwt) {
+
+
+        accountService.creditBalance(accountNumber, amount, jwt.getSubject());
 
         return ResponseEntity.ok("Balance credited successfully");
     }
@@ -154,4 +166,22 @@ public class AccountController {
 
         return ResponseEntity.ok(accountService.getEmail(accountNumber));
     }
-}
+
+    @GetMapping("/internal/status/{email}")
+    public ResponseEntity<String> getStatus(
+            @PathVariable String email,
+            @RequestHeader("X-Internal-Secret") String suppliedSecret) {
+
+        validateInternalSecret(suppliedSecret);
+
+        return ResponseEntity.ok(accountService.getStatus(email).name());
+    }
+
+    @PreAuthorize("hasRole")
+    @PutMapping("/unblock")
+    public ResponseEntity<String> unBlock(
+            @PathVariable String accountNumber) {
+
+        accountService.unBlock(accountNumber);
+        return ResponseEntity.ok("Account unblocked successfully");
+    }}

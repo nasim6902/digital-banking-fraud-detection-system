@@ -21,3 +21,4 @@ application-local.yaml
 Thumbs.db
 
 .idea
+.env

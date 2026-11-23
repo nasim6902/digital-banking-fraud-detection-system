@@ -163,13 +163,13 @@ public class TransactionService {
                 transaction.getAmount());
 
         // CREDIT MONEY BACK TO SENDER SYNCHRONOUSLY
-        accountServiceClient.creditBalance(
+        accountServiceClient.refundBalance(
                 transaction.getSenderAccountNumber(),
                 transaction.getAmount(),
                 internalApiSecret
         );
 
-        transaction.setStatus(TransactionStatus.FLAGGED);
+        transaction.setStatus(TransactionStatus.FAILED);
         transaction.setFailureReason(reason +
                 " - SAGA Compensation executed, amount refunded at "+ LocalDateTime.now());
 
@@ -196,12 +196,12 @@ public class TransactionService {
         fraudEvent.put("accountNumber", transaction.getSenderAccountNumber());
         fraudEvent.put("reason", reason);
 
+        // SAGA COMPENSATION - refund Sender
+        compensateTransaction(transaction, reason);
+
         kafkaTemplate.send(FRAUD_DETECTED_TOPIC, transaction.getSenderAccountNumber(), fraudEvent);
         log.warn("fraud.detected published - account: {} will be blocked, Kindly contact to the bank",
                 transaction.getSenderAccountNumber());
-
-        // SAGA COMPENSATION - refund Sender
-        compensateTransaction(transaction, reason);
     }
 
     private void completeTransaction(Transaction transaction){
@@ -211,6 +211,7 @@ public class TransactionService {
 
         TransactionCompletedEvent completedEvent = new TransactionCompletedEvent(
                 transaction.getId(),
+                transaction.getUserId(),
                 transaction.getSenderAccountNumber(),
                 transaction.getReceiverAccountNumber(),
                 transaction.getAmount(),

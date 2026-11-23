@@ -4,7 +4,7 @@ spring:
   datasource:
     url: jdbc:mysql://localhost:3306/dbs_transaction_db?createDatabaseIfNotExist=true
     username: root
-    password: Abdul@sql123
+    password: ${DB_PASS}
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
@@ -43,10 +43,10 @@ server:
   port: 8082
 
 jwt:
-  secret: ${JWT_SECRET:6ejww/6f3JIAa8GVIPNTDWsjR0Wx/iCrOp6fSMaFBB0=}
+  secret: ${JWT_SECRET}
 
 internal-api:
-  secret: ${DBS_INTERNAL_API_SECRET:WL0ZxUjhnyh0ZLjUuQc+yQcuuYhGCK6ahgAleITHdn0=}
+  secret: ${DBS_INTERNAL_API_SECRET}
 
 eureka:
   client:

@@ -61,7 +61,7 @@ spring:
 
 # JWT configuration
 jwt:
-  secret: ${JWT_SECRET:6ejww/6f3JIAa8GVIPNTDWsjR0Wx/iCrOp6fSMaFBB0=}
+  secret: ${JWT_SECRET}
 
 # Eureka configuration
 eureka:
