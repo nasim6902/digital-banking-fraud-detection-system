@@ -1,6 +1,7 @@
 
 package com.banking.authservice.service;
 
+import com.banking.authservice.client.AccountServiceClient;
 import com.banking.authservice.dto.AuthResponse;
 import com.banking.authservice.dto.LoginRequest;
 import com.banking.authservice.dto.RegisterRequest;
@@ -12,12 +13,15 @@ import com.banking.authservice.exception.InvalidCredentialsException;
 import com.banking.authservice.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -27,10 +31,15 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AuthService {
 
+    private final AccountServiceClient accountServiceClient;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+
+    @Value("${internal-api.secret}")
+    private String internalApiSecret;
+
 
     private static final String REGISTRATI0N_COMPLETED_TOPIC = "registration.completed";
     private final KafkaTemplate<String, Object> kafkaTemplate;
@@ -73,6 +82,7 @@ public class AuthService {
     }
 
 
+
     public AuthResponse login(LoginRequest request) {
 
         String email = request.getEmail().trim().toLowerCase();
@@ -94,12 +104,20 @@ public class AuthService {
             );
         }
 
+        String status = accountServiceClient.getStatus(
+                email, internalApiSecret
+        );
+
+        if ("BLOCKED".equals(status) || "CLOSED".equals(status)) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "Account is " + status);
+        }
+
         User user = userRepository.findByEmailIgnoreCase(email)
-                .orElseThrow(() ->
-                        new InvalidCredentialsException(
-                                "Invalid email or password"
-                        )
-                );
+                .orElseThrow(() -> new InvalidCredentialsException(
+                        "Invalid email or password"
+                ));
 
         String token = jwtService.generateToken(user);
 

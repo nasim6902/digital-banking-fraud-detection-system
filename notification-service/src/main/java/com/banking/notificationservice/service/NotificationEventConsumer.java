@@ -70,7 +70,7 @@ public class NotificationEventConsumer {
                     String.format(
                             "Your account %s has been blocked. " +
                                     "Reason: %s. " +
-                                    "Please contact your bank immediately.",
+                                    "Please contact bank immediately.",
                             accountNumber, reason));
 
         } catch (Exception e) {

@@ -24,6 +24,6 @@ public class EmailService {
         mail.setText(message);
 
         javaMailSender.send(mail);
-        log.info("Email sent successfully with OTP");
+        log.info("Email sent successfully.");
     }
 }

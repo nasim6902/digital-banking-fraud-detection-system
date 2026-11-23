@@ -163,7 +163,28 @@ public class AccountService {
 
 
     @Transactional
-    public void creditBalance(String accountNumber, BigDecimal amount) {
+    public void refundBalance(String accountNumber, BigDecimal amount) {
+
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException(
+                    "Credit amount must be greater than zero");
+        }
+
+        log.info("Refunding {} to account: {}", amount, accountNumber);
+
+        Account account = accountRepository
+                .findByAccountNumber(accountNumber)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Account not found: " + accountNumber));
+
+        account.setBalance(account.getBalance().add(amount));
+        accountRepository.save(account);
+
+        log.info("Balance refunded successfully for account: {}", accountNumber);
+    }
+
+    @Transactional
+    public void creditBalance(String accountNumber, BigDecimal amount, String userId) {
 
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException(
@@ -172,8 +193,10 @@ public class AccountService {
 
         log.info("Crediting {} to account: {}", amount, accountNumber);
 
-        Account account = findByAccountNumber(accountNumber);
-
+        Account account = accountRepository
+                .findByAccountNumberAndOwnerUserId(accountNumber, userId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Account not found: " + accountNumber));
         account.setBalance(account.getBalance().add(amount));
         accountRepository.save(account);
 
@@ -187,9 +210,10 @@ public class AccountService {
         try {
             String receiverAccount = (String) payload.get("receiverAccountNumber");
             BigDecimal amount = new BigDecimal(payload.get("amount").toString());
+            String userId = (String) payload.get("userId");
 
             log.info("Crediting account: {} amount: {}", receiverAccount, amount);
-            creditBalance(receiverAccount, amount);
+            creditBalance(receiverAccount, amount, userId);
         } catch (Exception e) {
             log.error("Error crediting account: {}", e.getMessage(), e);
         }
@@ -256,5 +280,22 @@ public class AccountService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "There is no account with this account number: " + accountNumber));
         return account.getEmail();
+    }
+
+    public AccountStatus getStatus(String email) {
+        Account account = accountRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Account not found for email: " + email));
+
+        return account.getStatus();
+    }
+
+    @Transactional
+    public void unBlock(String accountNumber) {
+        log.info("Unblocking account: {}", accountNumber);
+        Account account = findByAccountNumber(accountNumber);
+        account.setStatus(AccountStatus.ACTIVE);
+        accountRepository.save(account);
+        log.info("Account unblocked: {}", accountNumber);
     }
 }

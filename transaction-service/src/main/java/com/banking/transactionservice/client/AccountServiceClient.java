@@ -27,8 +27,8 @@ public interface AccountServiceClient {
             @RequestParam("amount") BigDecimal amount,
             @RequestHeader("X-Internal-Secret") String internalSecret);
 
-    @PutMapping("/api/v1/accounts/{accountNumber}/credit")
-    String creditBalance(
+    @PutMapping("/api/v1/accounts/internal/{accountNumber}/refund")
+    String refundBalance(
             @PathVariable("accountNumber") String accountNumber,
             @RequestParam("amount") BigDecimal amount,
             @RequestHeader("X-Internal-Secret") String internalSecret);
