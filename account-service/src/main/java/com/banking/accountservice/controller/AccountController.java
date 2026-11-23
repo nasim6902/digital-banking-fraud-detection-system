@@ -177,11 +177,12 @@ public class AccountController {
         return ResponseEntity.ok(accountService.getStatus(email).name());
     }
 
-    @PreAuthorize("hasRole")
-    @PutMapping("/unblock")
-    public ResponseEntity<String> unBlock(
+    @PreAuthorize("hasRole('ADMIN')")
+    @PutMapping("/unblock/{accountNumber}")
+    public ResponseEntity<String> unblock(
             @PathVariable String accountNumber) {
 
-        accountService.unBlock(accountNumber);
+        accountService.unblock(accountNumber);
         return ResponseEntity.ok("Account unblocked successfully");
-    }}
+    }
+}

@@ -11,6 +11,7 @@ import com.banking.authservice.entity.User;
 import com.banking.authservice.exception.EmailAlreadyRegisteredException;
 import com.banking.authservice.exception.InvalidCredentialsException;
 import com.banking.authservice.repository.UserRepository;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -82,7 +83,6 @@ public class AuthService {
     }
 
 
-
     public AuthResponse login(LoginRequest request) {
 
         String email = request.getEmail().trim().toLowerCase();
@@ -130,5 +130,74 @@ public class AuthService {
         log.info("User authenticated successfully");
 
         return response;
+    }
+
+    public RegistrationResponse adminRegister(RegisterRequest request) {
+
+        String email = request.getEmail().trim().toLowerCase();
+
+        log.info("Admin registration initiated");
+
+        if (userRepository.existsByEmailIgnoreCase(email)) {
+            log.warn("Admin registration rejected: email already registered");
+            throw new EmailAlreadyRegisteredException(
+                    "Email is already registered");
+        }
+
+        User user = new User();
+        user.setEmail(email);
+        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+        user.setRole(Role.ADMIN);
+
+        User savedUser = userRepository.save(user);
+
+        log.info("Admin registration completed successfully. User ID: {}",
+                savedUser.getId());
+
+        Map<String, Object> rcEvent = new HashMap<>();
+        rcEvent.put("userId", savedUser.getId());
+        rcEvent.put("email", savedUser.getEmail());
+        rcEvent.put("createdAt", savedUser.getCreatedAt());
+
+        kafkaTemplate.send(REGISTRATI0N_COMPLETED_TOPIC, savedUser.getId(), rcEvent);
+
+        return new RegistrationResponse(savedUser.getId(),
+                savedUser.getEmail(),
+                savedUser.getRole().name(),
+                savedUser.getCreatedAt(),
+                "Admin registration successful.");
+
+    }
+
+
+    public AuthResponse adminLogin(@Valid LoginRequest request) {
+
+        String email = request.getEmail().trim().toLowerCase();
+        AuthResponse response = new AuthResponse();
+        UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(
+                email, request.getPassword());
+        try {
+            authenticationManager.authenticate(token);
+            User user = userRepository.findByEmailIgnoreCase(email)
+                    .orElseThrow(() -> new InvalidCredentialsException(
+                            "Invalid email or password"
+                    ));
+            String adminToken = jwtService.generateToken(user);
+
+            response.setUserId(user.getId());
+            response.setEmail(user.getEmail());
+            response.setRole(user.getRole().name());
+            response.setToken(adminToken);
+
+            log.info("Admin authenticated successfully");
+
+            return response;
+
+        } catch (AuthenticationException ex) {
+            log.warn("Admin Login rejected: invalid credentials");
+            throw new InvalidCredentialsException(
+                    "Invalid email or password"
+            );
+        }
     }
 }

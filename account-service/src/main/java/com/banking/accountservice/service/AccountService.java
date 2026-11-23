@@ -12,12 +12,14 @@ import com.banking.accountservice.model.AccountType;
 import com.banking.accountservice.repository.AccountRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.security.SecureRandom;
@@ -291,11 +293,20 @@ public class AccountService {
     }
 
     @Transactional
-    public void unBlock(String accountNumber) {
+    public void unblock(String accountNumber) {
         log.info("Unblocking account: {}", accountNumber);
         Account account = findByAccountNumber(accountNumber);
+
+        if (account.getStatus() != AccountStatus.BLOCKED) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Account is not blocked"
+            );
+        }
+
         account.setStatus(AccountStatus.ACTIVE);
         accountRepository.save(account);
+
         log.info("Account unblocked: {}", accountNumber);
     }
 }
